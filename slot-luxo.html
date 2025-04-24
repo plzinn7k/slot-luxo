@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slot Luxo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom, #1f1c2c, #928dab);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px #000;
+    }
+    .login {
+      margin-bottom: 20px;
+    }
+    .slot-machine {
+      display: grid;
+      grid-template-columns: repeat(6, 100px);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .slot {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(145deg, #ff416c, #ff4b2b);
+      border-radius: 20px;
+      font-size: 2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(255,255,255,0.6);
+      transition: transform 0.3s ease;
+    }
+    .slot.spin {
+      animation: spinSlot 0.5s ease;
+    }
+    @keyframes spinSlot {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    button {
+      background-color: #ff4b2b;
+      border: none;
+      padding: 10px 30px;
+      font-size: 1.2em;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #ff416c;
+    }
+    .message, .credits, .balance {
+      margin-top: 10px;
+      font-size: 1.2em;
+    }
+    .form-control {
+      margin: 10px 0;
+    }
+    .premios {
+      margin-top: 15px;
+      text-align: left;
+    }
+    .payment {
+      margin-top: 10px;
+    }
+    #qr-container {
+      margin-top: 15px;
+      display: none;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Slot Luxo</h1>
+
+  <div class="login">
+    <label for="username">Usuário: </label>
+    <input type="text" id="username" placeholder="Digite seu nome">
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <div class="balance">Saldo: <span id="balance">100</span> moedas</div>
+
+  <label for="bet">Aposta:</label>
+  <select id="bet">
+    <option value="5">5 moedas</option>
+    <option value="10" selected>10 moedas</option>
+    <option value="20">20 moedas</option>
+    <option value="50">50 moedas</option>
+    <option value="100">100 moedas</option>
+  </select>
+
+  <div class="slot-machine" id="slot-machine">
+    <div class="slot" id="slot1">🍒</div>
+    <div class="slot" id="slot2">🍋</div>
+    <div class="slot" id="slot3">🔔</div>
+    <div class="slot" id="slot4">💎</div>
+    <div class="slot" id="slot5">7️⃣</div>
+    <div class="slot" id="slot6">🍀</div>
+  </div>
+  <button onclick="spin()">Girar</button>
+  <div class="message" id="message">Boa sorte!</div>
+
+  <div class="premios">
+    <strong>Tabela de Prêmios:</strong>
+    <ul>
+      <li>3 símbolos iguais: +2x aposta</li>
+      <li>3 símbolos "7️⃣": +4x aposta</li>
+      <li>4 símbolos iguais: +7x aposta</li>
+      <li>5 símbolos iguais: +15x aposta</li>
+    </ul>
+  </div>
+
+  <div class="payment">
+    <strong>Formas de Pagamento:</strong>
+    <p>💳 Cartão de Crédito | 🔁 PIX</p>
+    <button onclick="simularPagamento('pix')">Adicionar 100 moedas via Pix</button>
+    <button onclick="simularPagamento('cartao')">Adicionar 100 moedas via Cartão</button>
+    <button onclick="mostrarQRCode()">🔁 Mostrar QR Code Pix</button>
+  </div>
+
+  <div id="qr-container">
+    <img id="qr-pix" src="https://api.qrserver.com/v1/create-qr-code/?data=00020126580014br.gov.bcb.pix011127996666948520400005303986540500.005802BR5925Slot%20Luxo%20Jogador6009SAO%20PAULO62100506luxo70123456789&size=200x200" alt="QR Code Pix Nubank">
+    <p style="color:#000">Use o app do banco para escanear e pagar R$ 5,00</p>
+  </div>
+
+  <audio id="spinSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.wav"></audio>
+  <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-animated-small-group-applause-523.wav"></audio>
+  <audio id="failSound" src="https://assets.mixkit.co/sfx/preview/mixkit-losing-piano-2023.wav"></audio>
+
+  <script>
+    const emojis = ['🍒', '🍋', '🔔', '💎', '7️⃣', '🍀'];
+    let balance = 100;
+
+    function login() {
+      const name = document.getElementById('username').value;
+      if (name) {
+        alert(`Bem-vindo, ${name}!`);
+      }
+    }
+
+    function spin() {
+      const bet = parseInt(document.getElementById('bet').value);
+      if (isNaN(bet) || bet <= 0 || bet > balance) {
+        document.getElementById('message').textContent = 'Aposta inválida ou saldo insuficiente!';
+        document.getElementById('failSound').play();
+        return;
+      }
+
+      balance -= bet;
+      document.getElementById('balance').textContent = balance;
+      document.getElementById('spinSound').play();
+
+      const results = [];
+      for (let i = 1; i <= 6; i++) {
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const slot = document.getElementById(`slot${i}`);
+        slot.textContent = randomEmoji;
+        slot.classList.add('spin');
+        setTimeout(() => slot.classList.remove('spin'), 500);
+        results.push(randomEmoji);
+      }
+      checkWin(results, bet);
+    }
+
+    function checkWin(results, bet) {
+      const msg = document.getElementById('message');
+      const counts = {};
+      results.forEach(symbol => counts[symbol] = (counts[symbol] || 0) + 1);
+
+      let winAmount = 0;
+      for (const [symbol, count] of Object.entries(counts)) {
+        if (count >= 5) winAmount = bet * 15;
+        else if (count === 4) winAmount = bet * 7;
+        else if (count === 3 && symbol === '7️⃣') winAmount = bet * 4;
+        else if (count === 3) winAmount = bet * 2;
+        if (winAmount > 0) break;
+      }
+
+      if (winAmount > 0) {
+        document.getElementById('winSound').play();
+        balance += winAmount;
+        document.getElementById('balance').textContent = balance;
+        msg.textContent = `🎉 Vitória! Você ganhou ${winAmount} moedas! 🎉`;
+      } else {
+        msg.textContent = 'Tente novamente!';
+      }
+    }
+
+    function simularPagamento(metodo) {
+      const confirmar = confirm(`Você está prestes a adicionar 100 moedas via ${metodo.toUpperCase()}. Continuar?`);
+      if (confirmar) {
+        balance += 100;
+        document.getElementById('balance').textContent = balance;
+        alert(`Pagamento via ${metodo.toUpperCase()} confirmado! Saldo atualizado.`);
+      }
+    }
+
+    function mostrarQRCode() {
+      document.getElementById('qr-container').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
